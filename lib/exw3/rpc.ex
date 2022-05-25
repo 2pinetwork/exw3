@@ -10,8 +10,7 @@ defmodule ExW3.Rpc do
   @type pending :: String.t()
 
   @doc "returns all available accounts"
-  @spec accounts() :: list()
-  @spec accounts([opts]) :: list()
+  @spec accounts(list()) :: list()
   def accounts(opts \\ []) do
     case call_client(:eth_accounts, [opts]) do
       {:ok, accounts} -> accounts
@@ -20,8 +19,7 @@ defmodule ExW3.Rpc do
   end
 
   @doc "Returns the current block number"
-  @spec block_number() :: {:ok, non_neg_integer} | {:error, ExW3.Utils.invalid_hex_string()}
-  @spec block_number([opts]) :: {:ok, non_neg_integer} | {:error, ExW3.Utils.invalid_hex_string()}
+  @spec block_number(list()) :: {:ok, non_neg_integer} | {:error, ExW3.Utils.invalid_hex_string()}
   def block_number(opts \\ []) do
     case call_client(:eth_block_number, [opts]) do
       {:ok, hex_block_number} -> ExW3.Utils.hex_to_integer(hex_block_number)
@@ -30,8 +28,7 @@ defmodule ExW3.Rpc do
   end
 
   @doc "Returns current balance of account"
-  @spec balance(binary()) :: integer() | {:error, any()}
-  @spec balance(binary(), [opts]) :: integer() | {:error, any()}
+  @spec balance(binary(), list()) :: integer() | {:error, any()}
   def balance(account, opts \\ []) do
     case call_client(:eth_get_balance, [account, "latest", opts]) do
       {:ok, hex_balance} ->
@@ -44,9 +41,9 @@ defmodule ExW3.Rpc do
   end
 
   @doc "Returns transaction receipt for specified transaction hash(id)"
-  @spec tx_receipt(binary()) :: {:ok, map()} | {:error, any()}
-  def tx_receipt(tx_hash) do
-    case call_client(:eth_get_transaction_receipt, [tx_hash]) do
+  @spec tx_receipt(binary(), list()) :: {:ok, map()} | {:error, any()}
+  def tx_receipt(tx_hash, opts \\ []) do
+    case call_client(:eth_get_transaction_receipt, [tx_hash, opts]) do
       {:ok, nil} ->
         {:error, :not_mined}
 
@@ -62,27 +59,27 @@ defmodule ExW3.Rpc do
   end
 
   @doc "Returns block data for specified block number"
-  @spec block(integer()) :: any() | {:error, any()}
-  def block(block_number) do
-    case call_client(:eth_get_block_by_number, [block_number, true]) do
+  @spec block(integer(), boolean(), list()) :: any() | {:error, any()}
+  def block(block_number, with_transaction \\ true, opts \\ []) do
+    case call_client(:eth_get_block_by_number, [block_number, with_transaction, opts]) do
       {:ok, block} -> block
       err -> err
     end
   end
 
   @doc "Creates a new filter, returns filter id. For more sophisticated use, prefer ExW3.Contract.filter."
-  @spec new_filter(map()) :: binary() | {:error, any()}
-  def new_filter(map) do
-    case call_client(:eth_new_filter, [map]) do
+  @spec new_filter(map(), list()) :: binary() | {:error, any()}
+  def new_filter(map, opts \\ []) do
+    case call_client(:eth_new_filter, [map, opts]) do
       {:ok, filter_id} -> filter_id
       err -> err
     end
   end
 
   @doc "Gets event changes (logs) by filter. Unlike ExW3.Contract.get_filter_changes it does not return the data in a formatted way"
-  @spec get_filter_changes(binary()) :: any()
-  def get_filter_changes(filter_id) do
-    case call_client(:eth_get_filter_changes, [filter_id]) do
+  @spec get_filter_changes(binary(), list()) :: any()
+  def get_filter_changes(filter_id, opts \\ []) do
+    case call_client(:eth_get_filter_changes, [filter_id, opts]) do
       {:ok, changes} -> changes
       err -> err
     end
@@ -96,7 +93,7 @@ defmodule ExW3.Rpc do
           optional(:blockhash) => String.t()
         }
 
-  @spec get_logs(log_filter, [opts]) :: {:ok, list} | {:error, term} | request_error
+  @spec get_logs(log_filter, list()) :: {:ok, list} | {:error, term} | request_error
   def get_logs(filter, opts \\ []) do
     with {:ok, _} = result <- call_client(:eth_get_logs, [filter, opts]) do
       result
@@ -106,9 +103,9 @@ defmodule ExW3.Rpc do
   end
 
   @doc "Uninstalls filter from the ethereum node"
-  @spec uninstall_filter(binary()) :: boolean() | {:error, any()}
-  def uninstall_filter(filter_id) do
-    case call_client(:eth_uninstall_filter, [filter_id]) do
+  @spec uninstall_filter(binary(), list()) :: boolean() | {:error, any()}
+  def uninstall_filter(filter_id, opts \\ []) do
+    case call_client(:eth_uninstall_filter, [filter_id, opts]) do
       {:ok, result} -> result
       err -> err
     end
@@ -160,7 +157,7 @@ defmodule ExW3.Rpc do
   end
 
   @doc "Using the personal api, this method returns the address associated with the private key that was used to calculate the signature with personal_sign."
-  @spec personal_ec_recover(binary(), binary(), []) :: {:ok, binary()} | {:error, any()}
+  @spec personal_ec_recover(binary(), binary(), list()) :: {:ok, binary()} | {:error, any()}
   def personal_ec_recover(data0, data1, opts \\ []) do
     call_client(:request, ["personal_ecRecover", [data0, data1], opts])
   end

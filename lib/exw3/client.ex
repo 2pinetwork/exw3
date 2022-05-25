@@ -4,7 +4,7 @@ defmodule ExW3.Client do
   @type error :: {:error, :invalid_client_type} | request_error
 
   @spec call_client(atom) :: {:ok, term} | error
-  @spec call_client(atom, [argument]) :: {:ok, term} | error
+  @spec call_client(atom, list()) :: {:ok, term} | error
   def call_client(method_name, arguments \\ []) do
     url_opt = extract_url_opt(arguments)
 

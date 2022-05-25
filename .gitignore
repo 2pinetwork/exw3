@@ -29,3 +29,4 @@ exw3-*.tar
 .env*
 passfile
 docker/openethereum
+docker_alt/openethereum
