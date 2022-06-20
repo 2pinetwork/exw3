@@ -185,6 +185,63 @@ defmodule ExW3.Contract do
     {:ok, state}
   end
 
+  @doc "Updates info for the given server"
+  # @spec uppdate_info(atom()) :: {:ok, list()}
+  def update_info({server, name}, keyword_attrs) when is_list(keyword_attrs) do
+    attrs = keyword_attrs |> Enum.into(%{})
+
+    update_info({server, name}, attrs)
+  end
+
+  def update_info({server, name}, attrs) do
+    GenServer.cast(server, {:update_info, {name, attrs}})
+  end
+
+  def update_info(name, attrs) do
+    update_info({ContractManager, name}, attrs)
+  end
+
+  def handle_cast({:update_info, {name, attrs}}, state) do
+    contract_state = state[name]
+    info = (contract_state[:info] || %{}) |> Map.merge(attrs)
+
+    contract_state = contract_state |> Keyword.put(:info, info)
+    state = Map.put(state, name, contract_state)
+
+    {:noreply, state}
+  end
+
+  @doc "Returns info for the given server"
+  # @spec info(atom()) :: {:ok, list()}
+  def info({server, name}) do
+    GenServer.call(server, {:info, name})
+  end
+
+  def info(name) do
+    info({ContractManager, name})
+  end
+
+  def handle_call({:info, name}, _from, state) do
+    info = state[name][:info] || %{}
+
+    {:reply, info, state}
+  end
+
+  @doc "Returns keys/names added to the server"
+  # @spec keys(atom()) :: {:ok, list()}
+  def keys(server \\ ContractManager) do
+    GenServer.call(server, {:keys})
+  end
+
+  def handle_call({:keys}, _from, state) do
+    contract_keys =
+      state
+      |> Map.keys()
+      |> Kernel.--([:filters, :opts])
+
+    {:reply, contract_keys, state}
+  end
+
   defp data_signature_helper(name, fields) do
     non_indexed_types = Enum.map(fields, &Map.get(&1, "type"))
     Enum.join([name, "(", Enum.join(non_indexed_types, ","), ")"])
