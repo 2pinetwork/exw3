@@ -201,16 +201,6 @@ defmodule ExW3.Contract do
     update_info({ContractManager, name}, attrs)
   end
 
-  def handle_cast({:update_info, {name, attrs}}, state) do
-    contract_state = state[name]
-    info = (contract_state[:info] || %{}) |> Map.merge(attrs)
-
-    contract_state = contract_state |> Keyword.put(:info, info)
-    state = Map.put(state, name, contract_state)
-
-    {:noreply, state}
-  end
-
   @doc "Returns info for the given server"
   # @spec info(atom()) :: {:ok, list()}
   def info({server, name}) do
@@ -221,25 +211,10 @@ defmodule ExW3.Contract do
     info({ContractManager, name})
   end
 
-  def handle_call({:info, name}, _from, state) do
-    info = state[name][:info] || %{}
-
-    {:reply, info, state}
-  end
-
   @doc "Returns keys/names added to the server"
   # @spec keys(atom()) :: {:ok, list()}
   def keys(server \\ ContractManager) do
     GenServer.call(server, {:keys})
-  end
-
-  def handle_call({:keys}, _from, state) do
-    contract_keys =
-      state
-      |> Map.keys()
-      |> Kernel.--([:filters, :opts])
-
-    {:reply, contract_keys, state}
   end
 
   defp data_signature_helper(name, fields) do
@@ -439,6 +414,16 @@ defmodule ExW3.Contract do
   def handle_cast({:uninstall_filter, filter_id}, state) do
     ExW3.uninstall_filter(filter_id)
     {:noreply, Map.put(state, :filters, Map.delete(state[:filters], filter_id))}
+  end
+
+  def handle_cast({:update_info, {name, attrs}}, state) do
+    contract_state = state[name]
+    info = (contract_state[:info] || %{}) |> Map.merge(attrs)
+
+    contract_state = contract_state |> Keyword.put(:info, info)
+    state = Map.put(state, name, contract_state)
+
+    {:noreply, state}
   end
 
   # Calls
@@ -736,6 +721,21 @@ defmodule ExW3.Contract do
     decoded_tx = tx |> Map.put("logs", decoded_logs)
 
     {:reply, {:ok, decoded_tx}, state}
+  end
+
+  def handle_call({:info, name}, _from, state) do
+    info = state[name][:info] || %{}
+
+    {:reply, info, state}
+  end
+
+  def handle_call({:keys}, _from, state) do
+    contract_keys =
+      state
+      |> Map.keys()
+      |> Kernel.--([:filters, :opts])
+
+    {:reply, contract_keys, state}
   end
 
   defp decode_log(events, log) do
