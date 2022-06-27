@@ -62,6 +62,12 @@ defmodule ExW3.Contract do
   @doc "Returns the current Contract GenServer's address"
   @spec address({atom(), atom()}) :: {:ok, binary()}
   @spec address(atom()) :: {:ok, binary()}
+  # Prevents raise
+  def address({server, nil}) do
+    IO.warn("ExW3.Contract.address(#{inspect server}, nil)", [])
+    nil
+  end
+
   def address({server, name}) do
     GenServer.call(server, {:address, name})
   end
@@ -87,7 +93,13 @@ defmodule ExW3.Contract do
   def call(contract_name, method_name, args \\ [], timeout \\ :infinity)
 
   def call({server, contract_name}, method_name, args, timeout) do
-    GenServer.call(server, {:call, {contract_name, method_name, args}}, timeout)
+    # prevents raise
+    if GenServer.whereis(server) do
+      GenServer.call(server, {:call, {contract_name, method_name, args}}, timeout)
+    else
+      IO.warn("ExW3.Contract.call(#{inspect {server, contract_name}}) server doesn't exist", [])
+      nil
+    end
   end
 
   def call(contract_name, method_name, args, timeout) do
@@ -108,7 +120,7 @@ defmodule ExW3.Contract do
   @doc "Returns a formatted transaction receipt for the given transaction hash(id)"
   @spec tx_receipt({atom(), atom()}, binary()) :: map()
   @spec tx_receipt(atom(), binary()) :: map()
-  def tx_receipt(contract_name, tx_hash, timeout \\ 5000)
+  def tx_receipt(contract_name, tx_hash, timeout \\ :infinity)
 
   def tx_receipt({server, contract_name}, tx_hash, timeout) do
     GenServer.call(server, {:tx_receipt, {contract_name, tx_hash}}, timeout)
@@ -201,20 +213,36 @@ defmodule ExW3.Contract do
     update_info({ContractManager, name}, attrs)
   end
 
+  @doc "Returns value for the given server and info key"
+  def info({server, name}, key) do
+    {server, name} |> info() |> Map.get(key)
+  end
+
   @doc "Returns info for the given server"
-  # @spec info(atom()) :: {:ok, list()}
   def info({server, name}) do
-    GenServer.call(server, {:info, name})
+    # prevents raise
+    if GenServer.whereis(server) do
+      GenServer.call(server, {:info, name}, :infinity)
+    else
+      IO.warn("ExW3.Contract.info(#{inspect {server, name}}) server doesn't exist", [])
+      nil
+    end
   end
 
   def info(name) do
     info({ContractManager, name})
   end
 
-  @doc "Returns keys/names added to the server"
-  # @spec keys(atom()) :: {:ok, list()}
-  def keys(server \\ ContractManager) do
-    GenServer.call(server, {:keys})
+  @doc "Returns contract_identifiers added to the server"
+  # @spec contract_identifiers(atom()) :: {:ok, list()}
+  def contract_identifiers(server \\ ContractManager) do
+    # prevents raise
+    if GenServer.whereis(server) do
+      GenServer.call(server, {:contract_identifiers}, :infinity)
+    else
+      IO.warn("ExW3.Contract.contract_identifiers(#{inspect server}) server doesn't exist", [])
+      []
+    end
   end
 
   defp data_signature_helper(name, fields) do
@@ -315,7 +343,6 @@ defmodule ExW3.Contract do
           bin <>
             (ExW3.Abi.encode_data(types_signature, arguments) |> Base.encode16(case: :lower))
         else
-          # IO.warn("Could not find a constructor")
           bin
         end
       else
@@ -427,7 +454,6 @@ defmodule ExW3.Contract do
   end
 
   # Calls
-
   defp filter_topics_helper(event_signature, event_data, topic_types, topic_names) do
     topics =
       if is_map(event_data[:topics]) do
@@ -729,11 +755,17 @@ defmodule ExW3.Contract do
     {:reply, info, state}
   end
 
-  def handle_call({:keys}, _from, state) do
+  def handle_call({:contract_identifiers}, _from, state) do
+    server_name =
+      self()
+      |> Process.info()
+      |> Keyword.get(:registered_name)
+
     contract_keys =
       state
       |> Map.keys()
       |> Kernel.--([:filters, :opts])
+      |> add_server_name_to_identifiers(server_name)
 
     {:reply, contract_keys, state}
   end
@@ -789,5 +821,13 @@ defmodule ExW3.Contract do
         log
       end
     end)
+  end
+
+  # Only add server_name to identifiers when it's not the default module
+  defp add_server_name_to_identifiers(identifiers, __MODULE__), do: identifiers
+
+  defp add_server_name_to_identifiers(identifiers, server_name) do
+    identifiers
+    |> Enum.map(fn identifier -> {server_name, identifier} end)
   end
 end

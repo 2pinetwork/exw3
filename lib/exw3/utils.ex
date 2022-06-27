@@ -88,7 +88,6 @@ defmodule ExW3.Utils do
     end
   end
 
-  @deprecated "Use ExW3.Address.to_checksum/1 instead."
   @doc "Returns a checksummed address conforming to EIP-55"
   @spec to_checksum_address(String.t()) :: String.t()
   def to_checksum_address(address) do
@@ -122,7 +121,6 @@ defmodule ExW3.Utils do
     |> :binary.decode_unsigned()
   end
 
-  @deprecated "Use ExW3.Address.to_hex/1 instead."
   @doc "Converts bytes to Ethereum address"
   @spec to_address(binary()) :: binary()
   def to_address(bytes) do
