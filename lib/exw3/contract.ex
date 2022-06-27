@@ -63,13 +63,14 @@ defmodule ExW3.Contract do
   @spec address({atom(), atom()}) :: {:ok, binary()}
   @spec address(atom()) :: {:ok, binary()}
   # Prevents raise
-  def address({_server, nil}), do: nil
+  def address({server, nil}) do
+    IO.warn("ExW3.Contract.address(#{inspect server}, nil)", [])
+    nil
+  end
 
   def address({server, name}) do
     GenServer.call(server, {:address, name})
   end
-
-  def address(nil), do: nil
 
   def address(name) do
     address({ContractManager, name})
@@ -95,6 +96,9 @@ defmodule ExW3.Contract do
     # prevents raise
     if GenServer.whereis(server) do
       GenServer.call(server, {:call, {contract_name, method_name, args}}, timeout)
+    else
+      IO.warn("ExW3.Contract.call(#{inspect {server, contract_name}}) server doesn't exist", [])
+      nil
     end
   end
 
@@ -219,6 +223,9 @@ defmodule ExW3.Contract do
     # prevents raise
     if GenServer.whereis(server) do
       GenServer.call(server, {:info, name}, :infinity)
+    else
+      IO.warn("ExW3.Contract.info(#{inspect {server, name}}) server doesn't exist", [])
+      nil
     end
   end
 
@@ -233,6 +240,7 @@ defmodule ExW3.Contract do
     if GenServer.whereis(server) do
       GenServer.call(server, {:contract_identifiers}, :infinity)
     else
+      IO.warn("ExW3.Contract.contract_identifiers(#{inspect server}) server doesn't exist", [])
       []
     end
   end
