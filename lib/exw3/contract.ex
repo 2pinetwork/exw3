@@ -1,6 +1,9 @@
 defmodule ExW3.Contract do
   use GenServer
 
+  # Default timeout for GenServer calls
+  @timeout :infinity
+
   @log_integer_attrs [
     "blockNumber",
     "logIndex",
@@ -19,7 +22,7 @@ defmodule ExW3.Contract do
   @spec deploy({atom(), atom()}, list()) :: {:ok, binary(), binary()}
   @spec deploy(atom(), list()) :: {:ok, binary(), binary()}
   def deploy({server, name}, args) do
-    GenServer.call(server, {:deploy, {name, args}})
+    GenServer.call(server, {:deploy, {name, args}}, @timeout)
   end
 
   def deploy(name, args) do
@@ -64,12 +67,12 @@ defmodule ExW3.Contract do
   @spec address(atom()) :: {:ok, binary()}
   # Prevents raise
   def address({server, nil}) do
-    IO.warn("ExW3.Contract.address(#{inspect server}, nil)", [])
+    IO.warn("ExW3.Contract.address(#{inspect(server)}, nil)", [])
     nil
   end
 
   def address({server, name}) do
-    GenServer.call(server, {:address, name})
+    GenServer.call(server, {:address, name}, @timeout)
   end
 
   def address(name) do
@@ -80,7 +83,7 @@ defmodule ExW3.Contract do
   @spec abi({atom(), atom()}) :: {:ok, binary()}
   @spec abi(atom()) :: {:ok, binary()}
   def abi({server, name}) do
-    GenServer.call(server, {:abi, name})
+    GenServer.call(server, {:abi, name}, @timeout)
   end
 
   def abi(name) do
@@ -90,14 +93,14 @@ defmodule ExW3.Contract do
   @doc "Use a Contract's method with an eth_call"
   @spec call({atom(), atom()}, atom(), list(), any()) :: {:ok, any()}
   @spec call(atom(), atom(), list(), any()) :: {:ok, any()}
-  def call(contract_name, method_name, args \\ [], timeout \\ :infinity)
+  def call(contract_name, method_name, args \\ [], timeout \\ @timeout)
 
   def call({server, contract_name}, method_name, args, timeout) do
     # prevents raise
     if GenServer.whereis(server) do
       GenServer.call(server, {:call, {contract_name, method_name, args}}, timeout)
     else
-      IO.warn("ExW3.Contract.call(#{inspect {server, contract_name}}) server doesn't exist", [])
+      IO.warn("ExW3.Contract.call(#{inspect({server, contract_name})}) server doesn't exist", [])
       nil
     end
   end
@@ -110,7 +113,7 @@ defmodule ExW3.Contract do
   @spec send({atom(), atom()}, atom(), list(), map()) :: {:ok, binary()}
   @spec send(atom(), atom(), list(), map()) :: {:ok, binary()}
   def send({server, contract_name}, method_name, args, options) do
-    GenServer.call(server, {:send, {contract_name, method_name, args, options}})
+    GenServer.call(server, {:send, {contract_name, method_name, args, options}}, @timeout)
   end
 
   def send(contract_name, method_name, args, options) do
@@ -120,7 +123,7 @@ defmodule ExW3.Contract do
   @doc "Returns a formatted transaction receipt for the given transaction hash(id)"
   @spec tx_receipt({atom(), atom()}, binary()) :: map()
   @spec tx_receipt(atom(), binary()) :: map()
-  def tx_receipt(contract_name, tx_hash, timeout \\ :infinity)
+  def tx_receipt(contract_name, tx_hash, timeout \\ @timeout)
 
   def tx_receipt({server, contract_name}, tx_hash, timeout) do
     GenServer.call(server, {:tx_receipt, {contract_name, tx_hash}}, timeout)
@@ -138,7 +141,8 @@ defmodule ExW3.Contract do
   def filter({server, contract_name}, event_name, event_data) do
     GenServer.call(
       server,
-      {:filter, {contract_name, event_name, event_data}}
+      {:filter, {contract_name, event_name, event_data}},
+      @timeout
     )
   end
 
@@ -150,10 +154,7 @@ defmodule ExW3.Contract do
   @spec get_filter_changes({atom(), binary()}) :: {:ok, list()}
   @spec get_filter_changes(binary()) :: {:ok, list()}
   def get_filter_changes({server, filter_id}) do
-    GenServer.call(
-      server,
-      {:get_filter_changes, filter_id}
-    )
+    GenServer.call(server, {:get_filter_changes, filter_id}, @timeout)
   end
 
   def get_filter_changes(filter_id) do
@@ -166,10 +167,7 @@ defmodule ExW3.Contract do
   def get_logs(contract_name, event_data \\ %{})
 
   def get_logs({server, contract_name}, event_data) do
-    GenServer.call(
-      server,
-      {:get_logs, contract_name, event_data}
-    )
+    GenServer.call(server, {:get_logs, contract_name, event_data}, @timeout)
   end
 
   def get_logs(contract_name, event_data) do
@@ -179,14 +177,14 @@ defmodule ExW3.Contract do
   @doc "Returns opts for the given server"
   @spec opts(atom()) :: {:ok, list()}
   def opts(server \\ ContractManager) do
-    GenServer.call(server, {:opts})
+    GenServer.call(server, {:opts}, @timeout)
   end
 
   @doc "return a formatted logs for a transaction."
   # @spec register({atom(), atom()}, list()) :: :ok
   # @spec register(atom(), list()) :: :ok
   def decode_tx_logs({server, name}, tx) do
-    GenServer.call(server, {:decode_tx_logs, {name, tx}})
+    GenServer.call(server, {:decode_tx_logs, {name, tx}}, @timeout)
   end
 
   def decode_tx_logs(name, tx) do
@@ -222,9 +220,9 @@ defmodule ExW3.Contract do
   def info({server, name}) do
     # prevents raise
     if GenServer.whereis(server) do
-      GenServer.call(server, {:info, name}, :infinity)
+      GenServer.call(server, {:info, name}, @timeout)
     else
-      IO.warn("ExW3.Contract.info(#{inspect {server, name}}) server doesn't exist", [])
+      IO.warn("ExW3.Contract.info(#{inspect({server, name})}) server doesn't exist", [])
       nil
     end
   end
@@ -238,9 +236,9 @@ defmodule ExW3.Contract do
   def contract_identifiers(server \\ ContractManager) do
     # prevents raise
     if GenServer.whereis(server) do
-      GenServer.call(server, {:contract_identifiers}, :infinity)
+      GenServer.call(server, {:contract_identifiers}, @timeout)
     else
-      IO.warn("ExW3.Contract.contract_identifiers(#{inspect server}) server doesn't exist", [])
+      IO.warn("ExW3.Contract.contract_identifiers(#{inspect(server)}) server doesn't exist", [])
       []
     end
   end
