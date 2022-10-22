@@ -2,7 +2,7 @@ defmodule ExW3.Contract do
   use GenServer
 
   # Default timeout for GenServer calls
-  @timeout :infinity
+  @timeout Application.get_env(:exw3, :timeout, :infinity)
 
   @log_integer_attrs [
     "blockNumber",
